@@ -306,24 +306,29 @@ def download_pretrained(
         force_hf_hub: bool = False,
         cache_dir: Union[str, None] = None,
 ):
+    # Sử dụng '/src/downloaded_models/' làm thư mục cache mặc định
+    if not cache_dir:
+        cache_dir = '/root/comfy/ComfyUI/models/clip/'
+    
     target = ''
     if not cfg:
         return target
 
     download_url = cfg.get('url', '')
     download_hf_hub = cfg.get('hf_hub', '')
-    if download_hf_hub and force_hf_hub:
-        # use HF hub even if url exists
-        download_url = ''
-
+    
+    # Kiểm tra nếu là HuggingFace hub path
+    if download_hf_hub:
+        model_id, filename = os.path.split(download_hf_hub)
+        # Kiểm tra file trong thư mục downloaded_models trước
+        direct_path = os.path.join(cache_dir, filename)
+        if os.path.exists(direct_path):
+            return direct_path
+            
     if download_url:
         target = download_pretrained_from_url(download_url, cache_dir=cache_dir)
     elif download_hf_hub:
         has_hf_hub(True)
-        # we assume the hf_hub entries in pretrained config combine model_id + filename in
-        # 'org/model_name/filename.pt' form. To specify just the model id w/o filename and
-        # use 'open_clip_pytorch_model.bin' default, there must be a trailing slash 'org/model_name/'.
-        model_id, filename = os.path.split(download_hf_hub)
         if filename:
             target = download_pretrained_from_hf(model_id, filename=filename, cache_dir=cache_dir)
         else:
